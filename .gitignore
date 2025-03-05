@@ -13,3 +13,4 @@ dataset
 save_path
 .idea
 model.torch
+sam2_logs
