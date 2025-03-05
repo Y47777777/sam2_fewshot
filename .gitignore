@@ -12,3 +12,4 @@ demo/backend/checkpoints/*.pt
 dataset
 save_path
 .idea
+model.torch

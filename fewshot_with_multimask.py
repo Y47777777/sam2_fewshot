@@ -156,15 +156,24 @@ def convertPolygonToMask(jsonfilePath):
             polygonPoints = np.array(polygonPoints, np.int32)
             mask = np.zeros((img_h, img_w), np.uint8)
             cv2.drawContours(mask, [polygonPoints], -1, (255), -1)
-            mask_dic[label] = mask
-
+            if label not in mask_dic:
+                mask_dic[label] = []
+            mask_dic[label].append(mask)
+            # cv2.imshow("mask", mask)
+            # cv2.waitKey(200)
     return mask_dic
 
 
 def calculate_iou(pr_mask, gt_mask):
-    assert pr_mask.shape == gt_mask.shape, "掩码的尺寸必须相同"
-    intersection = np.logical_and(pr_mask, gt_mask).sum()
-    union = np.logical_or(pr_mask, gt_mask).sum()
+    assert pr_mask[0].shape == gt_mask[0].shape, "掩码的尺寸必须相同"
+    mask_pr = np.zeros(pr_mask[0].shape, np.uint8)
+    mask_gt = np.zeros(pr_mask[0].shape, np.uint8)
+    for pr_m in pr_mask:
+        mask_pr = mask_pr | pr_m
+    for gt_m in gt_mask:
+        mask_gt = mask_gt | gt_m
+    intersection = np.logical_and(mask_pr, mask_gt).sum()
+    union = np.logical_or(mask_pr, mask_gt).sum()
     iou = intersection / union
     return iou
 
@@ -253,12 +262,13 @@ def predict(few_shot_path, test_path, save_root, few_shot_num, labels_name_dic, 
         for ann_frame_idx, masks_dic in enumerate(input_mask):
             for i, (key, mask) in enumerate(masks_dic.items()):
                 ann_obj_id = labels_name_dic[key]  # labels_name_dic[<label_name>]=<obj_id>
-                predictor.add_new_mask(
-                    inference_state=inference_state,
-                    frame_idx=ann_frame_idx,
-                    obj_id=ann_obj_id,
-                    mask=mask,
-                )
+                for mask_i in mask:
+                    predictor.add_new_mask(
+                        inference_state=inference_state,
+                        frame_idx=ann_frame_idx,
+                        obj_id=ann_obj_id,
+                        mask=np.array(mask_i),
+                    )
     else:
         print('没有输入mask！请检查输入！')
         return
@@ -311,7 +321,7 @@ def predict(few_shot_path, test_path, save_root, few_shot_num, labels_name_dic, 
                 obj_pr_mask = np.squeeze(np.array(obj_pr_mask, dtype=np.uint8), axis=0)
                 if obj_pr_mask.shape != (height, width):
                     obj_pr_mask = cv2.resize(obj_pr_mask, (width, height))  # (w,h)
-                pr_mask_dic[obj_id] = obj_pr_mask  # 更新
+                pr_mask_dic[obj_id]=obj_pr_mask  # 更新
 
                 # 如果有测试图像可以推理看SAM2的精度
                 if os.path.isfile(gt_mask_path):
@@ -372,9 +382,12 @@ def predict(few_shot_path, test_path, save_root, few_shot_num, labels_name_dic, 
 
 def Parser():
     parser = argparse.ArgumentParser(description='timm model')
-    parser.add_argument('--few_shot_path', type=str, default='/home/visionnav/code/sam2/dataset/fewshot', help='模板图和mask')
-    parser.add_argument('--test_path', type=str, default='/home/visionnav/code/sam2/dataset/test', help='待打标的图像')
-    parser.add_argument('--save_root', type=str, default='/home/visionnav/code/sam2/save_path', help='保存路径')
+    parser.add_argument('--few_shot_path', type=str,
+                        default='/home/visionnav/code/sam2/dataset/wrappallet/fewshot', help='模板图和mask')
+    parser.add_argument('--test_path', type=str,
+                        default='/home/visionnav/code/sam2/dataset/wrappallet/test', help='待打标的图像')
+    parser.add_argument('--save_root', type=str,
+                        default='/home/visionnav/code/sam2/save_path/wrappallet', help='保存路径')
     args = parser.parse_args()
     return args
 

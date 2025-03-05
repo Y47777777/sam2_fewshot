@@ -247,7 +247,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c",
         "--config",
-        required=True,
+        # required=True,
+        default="configs/sam2.1_training/sam2.1_hiera_b+_MOSE_finetune.yaml",
         type=str,
         help="path to config file (e.g. configs/sam2.1_training/sam2.1_hiera_b+_MOSE_finetune.yaml)",
     )
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     parser.add_argument("--account", type=str, default=None, help="SLURM account")
     parser.add_argument("--qos", type=str, default=None, help="SLURM qos")
     parser.add_argument(
-        "--num-gpus", type=int, default=None, help="number of GPUS per node"
+        "--num-gpus", type=int, default=2, help="number of GPUS per node"
     )
     parser.add_argument("--num-nodes", type=int, default=None, help="Number of nodes")
     args = parser.parse_args()
